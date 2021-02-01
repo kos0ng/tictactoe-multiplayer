@@ -8,39 +8,22 @@ use App\User;
 use Auth;
 use RecursiveArrayIterator;
 use RecursiveIteratorIterator;
+use Illuminate\Support\Facades\Hash;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
+
     public function __construct() {
         $this->middleware( 'auth' );
     }
 
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index() {
 
-        $data['user'] = \Auth::user();//retureaza userul curent
-
-        // print_r($user->id);
-        $data['player'] = User::select(['id','name'])->where('id','!=',$data['user']->id)->get();
-        // print_r($player);
-
+        $data['user'] = \Auth::user();
+        $data['player'] = User::select(['id','name','last_login_at','logged_in'])->where('id','!=',$data['user']->id)->orderBy('last_login_at','DESC')->get();
         return view( 'home',$data);
     }
 
-    /**
-     * Returns the user's current room
-     *
-     * @return mixed
-     */
     public function getRoom($id) {
 
         $user = Auth::user();
@@ -48,20 +31,10 @@ class HomeController extends Controller
         return $room;
     }
 
-    /**
-     * Here the method that is called every time a user enters the page
-     * If the user is not in a room we will create one for him.
-     *
-     * @return int
-     */
-    public function play($opponent) {
-
-//              return view( 'play' );
+    public function play($opponent,$rand_val=1) {
         $user = Auth::user();
 
-        // check for empty Rooms
         $room = Room::where(['user1_id'=>$user->id,'user2_id'=>$opponent])->first();
-        // print_r($room);
         if($room){
             if($room->user2_id==$user->id){
                 $tmp=Room::find($room->id);
@@ -83,54 +56,22 @@ class HomeController extends Controller
              $room             = new Room();
              $room->user1_id   = $user->id;
              $room->user2_id   = $opponent;
-             $room->turn       = 1;
+             $room->turn       = $rand_val;
              $room->table_data = [ [ NULL, NULL, NULL ], [ NULL, NULL, NULL ], [ NULL, NULL, NULL ] ];
              $room->save();
-             return $room->id;; // "Asteapta"    
+             return $room->id;
         }
-        // if ( $room ) {
-        //     if ( $room->user2_id )  //table_data=matricea x si 0
-        //         return $room->table_data; //"Inceper joc"
-        //     else
-        //         return 0; // "Asteapta"
-        // } else {
-        //     $room = Room::where( 'user2_id', $user->id )->first();
-
-        //     if ( $room ) {
-        //         return $room->table_data; //"Incepe joc"
-        //     } else {
-        //         $room = Room::whereNull( 'user2_id' )->first();
-        //         if ( $room ) {
-        //             $room->user2_id = $user->id;
-        //             $room->save();
-
-        //             return $room->table_data; //"Inceper joc"
-        //         } else {
-        //             $room             = new Room();
-        //             $room->user1_id   = $user->id;
-        //             $room->user2_id   = NULL;
-        //             $room->turn       = 1;
-        //             $room->table_data = [ [ NULL, NULL, NULL ], [ NULL, NULL, NULL ], [ NULL, NULL, NULL ] ];
-        //             $room->save();
-
-        //             return 0; // "Asteapta"
-        //         }
-        //     }
-        // }
 
     }
 
     public function leaderboard(){
-        $data['result']=User::select(['name','won_games','draw_games','lose_games'])->orderBy('won_games','DESC')->orderBy('draw_games','DESC')->orderBy('lose_games','ASC')->get();
+        $data['result']=User::select(['id','name','won_games','draw_games','lose_games'])->orderBy('won_games','DESC')->orderBy('draw_games','DESC')->orderBy('lose_games','ASC')->get();
         return view('leaderboard',$data);
     }
 
-    /**
-     * Show main page
-     *
-     */
     public function game($opponent) {
-        $room_id=$this->play($opponent);
+        $rand_val=rand(1,2);
+        $room_id=$this->play($opponent,$rand_val);
         $room = $this->getRoom($room_id);
         $user   = Auth::user();
         $first=User::select('name')->where(['id'=>$room->user1_id])->get();
@@ -138,26 +79,45 @@ class HomeController extends Controller
         $data['first']=$first[0]->name;
         $data['second']=$second[0]->name;
         $data['room_id']=$room_id;
-        if($user->id==$room->user1_id){
-            $data['type']='X';
+        if($rand_val==1){
+            if($user->id==$room->user1_id){
+                $data['type']='X';
+            }
+            else{
+                $data['type']='O';   
+            }
         }
         else{
-            $data['type']='O';   
-        }
-        // $data['opponent']=$opponent;
+            if($user->id==$room->user1_id){
+                $data['type']='X';
+            }
+            else{
+                $data['type']='O';   
+            }
+        }   
         return view( 'play' ,$data);
     }
 
-    /**
-     * Method to call every time the game needs to be updated.
-     *
-     * @return mixed|void
-     */
     public function notif(){
         $result = array();
         $user   = Auth::user();
-        array_push($result,Room::where(['user1_id'=>$user->id])->get());
-        array_push($result,Room::where(['user2_id'=>$user->id])->get());
+        $tmp=User::select(['id','name','last_login_at','logged_in'])->where('id','!=',$user->id)->get();
+        $online=array();
+        $offline=array();
+        foreach ($tmp as $key => $row) {
+            $last_login=strtotime($row->last_login_at);
+            if(time()-$last_login>env('SESSION_LIFETIME')*60 || $row->logged_in==0){
+                array_push($offline,$row->id);
+            }
+            else{
+                array_push($online,$row->id);
+            }
+        }
+        // print_r($online);
+        array_push($result,Room::whereIn('user2_id',$online)->where(['user1_id'=>$user->id])->get());
+        array_push($result,Room::whereIn('user1_id',$online)->where(['user2_id'=>$user->id])->get());
+        array_push($result,$offline);
+        array_push($result,$online);
         return $result;
     }
 
@@ -165,9 +125,8 @@ class HomeController extends Controller
 
         $room = $this->getRoom($id);
         if( is_null($room) )
-            return;
+            return 3;
 
-        // check who wins
         if ( $room->isFinished() ) {
             $room['winner'] = $this->winner($id);
         }
@@ -175,23 +134,69 @@ class HomeController extends Controller
         return $room;
     }
 
-    /**
-     * Method to call every time a user adds a sign on the grid
-     * Also here we check if the user wins the gameor not.
-     *
-     * @param Request $request
-     *
-     * @return array|int|void
-     */
+    public function edit(){
+        $data['user']   = Auth::user();
+        return view('edit',$data);
+    }
+
+    public function profile($id){
+        $data['user']=User::select(['name','photo','won_games','draw_games','lose_games'])->where('id',$id)->first();
+        return view('profile',$data);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user=Auth::user();
+        $tmp=User::find($user->id);
+        $request->validate([
+            'photo' => 'image|mimes:jpeg,png,jpg,svg|max:2048|dimensions:min_width=100,min_height=200,max_width=1024,max_height=1024',
+            'email' => 'unique:users,email,'.$user->id,
+        ]);
+        if($request->oldpass!='' && $request->newpass!=''){
+            $messages = [
+            'newpass.regex' => 'Password must containt uppercase,lowercase,number,and special characters!'
+            ];
+            $request->validate([
+                'newpass' => 'min:8|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%]).*$/|different:oldpass'
+            ],$messages);
+            if (Hash::check($request->oldpass, $user->password)){
+                $tmp->password= Hash::make($request->newpass);
+            }
+            else{
+                return back()->with('message', "Your Password doesn't match");
+            }
+        }
+        if($request->hasFile('photo')){
+            $imageName = time().'.'.$request->photo->getClientOriginalExtension();;
+            $request->photo->move(public_path('images/profile'), $imageName);
+            $tmp->photo=$imageName;
+            $tmp->name=$request->name;
+            $tmp->email=$request->email;
+            $tmp->save();
+        }
+        else{
+            $tmp->name=$request->name;
+            $tmp->email=$request->email;
+            $tmp->save();   
+        }
+        return back()->with('success', "Success Update Profile");
+    }
+    
+    public function decline($id){
+        $user=Auth::user();
+        Room::where(['user2_id'=>$user->id,'user1_id'=>$id])->delete();
+        Room::where(['user1_id'=>$user->id,'user2_id'=>$id])->delete();
+        return true;
+    }
+
     public function addSign( Request $request ) {
 
         $row    = $request->get( 'row' );
         $column = $request->get( 'column' );
         $user   = Auth::user();
 
-        // check for empty Rooms
         $room = $this->getRoom($request->id);
-        if ( $room->turn == -1 ) //-1 = end of the game
+        if ( $room->turn == -1 )
             return 0;
 
         $tableData = $room->table_data;
@@ -199,7 +204,6 @@ class HomeController extends Controller
         if ( !is_null( $tableData[ $row ][ $column ] ) )
             return;
 
-        // stabilire semn jucator
         $sign = NULL;
 
         if ( $room->user1_id == $user->id && $room->turn == 1 ) {
@@ -219,7 +223,12 @@ class HomeController extends Controller
         if ( $winner == 1 ) {
             $user->won_games++;
             $user->save();
-            $tmp=User::find($room->user2_id );
+            if($room->user1_id==$user->id){
+                $tmp=User::find($room->user2_id);
+            }
+            else{
+                $tmp=User::find($room->user1_id);   
+            }
             $tmp->lose_games++;
             $tmp->save();
         }
@@ -237,18 +246,12 @@ class HomeController extends Controller
             $room->save();
         }
 
-        // RETURN NEW DATA TO THE BROWSER
         return [
             "sign"   => $sign,
             "winner" => $winner,
         ];
     }
 
-    /**
-     * Get the game's winner
-     *
-     * @return int
-     */
     public function winner($id) {
         $room = $this->getRoom($id);
 
@@ -287,8 +290,6 @@ class HomeController extends Controller
             [ 0, 4, 8 ],
             [ 2, 4, 6 ]
         ];
-
-        // [ x, nul, o, nul, 0, 0, x, x, nul ];
 
         foreach ( $winRules as $rule ) {
             $win = 0;

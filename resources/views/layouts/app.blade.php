@@ -12,7 +12,7 @@
 
     <!-- Styles -->
     <link href="/css/animate.css" rel="stylesheet">
-    <link href="/css/app.css" rel="stylesheet">
+    <link href="/css/bootstrap.css" rel="stylesheet">
 
     <!-- Scripts -->
     <script>
@@ -36,8 +36,9 @@
                     </button>
 
                     <!-- Branding Image -->
-                    <a class="navbar-brand" href="{{ url('/home') }}">
-                        {{ config('app.name', 'Laravel') }}
+                    <img src="{{url('images/logo.png')}}" style="width: 5%;margin-top: 10px">
+                    <a class="navbar-brand" href="{{ url('/') }}">
+                        <b>{{ config('app.name', 'Laravel') }}</b>
                     </a>
                 </div>
                 <div class="collapse navbar-collapse" id="app-navbar-collapse">
@@ -53,6 +54,7 @@
                             <li><a href="{{ url('/login') }}">Login</a></li>
                             <li><a href="{{ url('/register') }}">Register</a></li>
                         @else
+                            <li><a href="{{ url('/home') }}">Dashboard</a></li>
                             <li><a href="{{ url('/leaderboard') }}">Leaderboard</a></li>
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -61,6 +63,7 @@
 
                                 <ul class="dropdown-menu" role="menu">
                                     <li>
+                                        <a href="{{ url('/edit')}}">Edit Profile</a>
                                         <a href="{{ url('/logout') }}"
                                             onclick="event.preventDefault();
                                                      document.getElementById('logout-form').submit();">

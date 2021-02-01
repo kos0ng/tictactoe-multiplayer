@@ -33,6 +33,9 @@
         <div class="row" style="margin-top: 5%">
             <h1 class="turn1 hide text-center" style="color: red">{{$first }} turn</h1>
             <h1 class="turn2 hide text-center" style="color: red">{{$second}} turn</h1>
+            <h1 class="win hide text-center" style="color: green">You WIN!</h1>
+            <h1 class="lose hide text-center" style="color: red">You Lose!</h1>
+            <h1 class="draw hide text-center" style="color: white">Draw!</h1>
             <div class="col-md-8 col-md-offset-2" style="margin-top: 5%">
                 <div class="panel panel-default">
 
@@ -42,19 +45,16 @@
                     </div>
                     <input type="hidden" id="id" value="{{$room_id}}">
                     <input type="hidden" name="_token" id="token" value="{{ csrf_token() }}">
-                    <div class="win hide text-center">YOU WIN</div>
-                    <div class="lose hide text-center">YOU LOSE</div>
-                    
-                    <div class="draw hide text-center">DRAW</div>
-                    <div class="win lose draw text-center hide">
-                        <a href="/game" class="btn btn-primary"> Start new Game</a>
+                    <div class="win lose draw text-center hide" style="margin-bottom: 5%">
+                        <button class="btn btn-success" onclick="window.location.reload();">Play Again?</button>
+                        <a href="/home"><button class="btn btn-danger" style="margin-left: 3%">Back to home</button></a>
                     </div>
                     <div class="grid hide"></div>
 
                     <hr>
 
                 </div>
-                <h2 style="text-align: center" id="x">You are <b>{{$type}}<b></h2>
+                <h2 style="text-align: center;color: white" id="x">You are <b>{{$type}}<b></h2>
             </div>
         </div>
     </div>

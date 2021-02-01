@@ -1,0 +1,15 @@
+assign x or o save in database ( lumayan random )
+who first random ( done )
+play again? ( done )
+list available online player // done
+profil player // done
+logout // done
+win algorithm // done
+profile photo // check
+home page // done
+decline // done
+draw belum tampil // done
+statistic // done 
+notif berhasil update // done
+win draw if full
+division by zero

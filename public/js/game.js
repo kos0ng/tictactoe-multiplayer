@@ -3,25 +3,29 @@ var cellHTML = "<div class='cell'></div>";
 
 var Game = null;
 
+function decline(id){
+            if (confirm('Are you sure to decline invitation??')) {
+                $.get("/decline/"+id,function(result){   
+                    location.reload();
+                });
+            }
+    }
+
 $( function () {
 	
-	// Un flag pentru a retine daca jocul a inceput sau nu
 	var gameStarted = false;
 	
 	/**
-	 * Creaza grila de 3x3 a jocului
 	 *
 	 * @param grid
 	 */
 	function createGrid( grid ) {
 		var cellId = 0;
 		
-		// Creare fiecarui rand din grila
 		grid.forEach( function ( row ) {
 			var rowElem = $( rowHTML );
 			$( '.grid' ).append( rowElem );
 			
-			// Creare fiecarei celule din grila
 			row.forEach( function ( cell, index ) {
 				var cellObject = new Cell( cell, cellId++ );
 				rowElem.append( cellObject.element );
@@ -30,7 +34,6 @@ $( function () {
 	}
 	
 	/**
-	 * O entitate pentru celula din grila jocului
 	 *
 	 * @param value
 	 * @param id
@@ -41,36 +44,32 @@ $( function () {
 		element.attr( 'id', 'cell-' + id );
 		element.text( value );
 		
-		// Evenimetul care se declanseaza in momentul in care
-		// utilizatorul da click pe o celula
 		element.click( function () {
-			var data = { // get row and column for the selected cell
+			var data = { 
 				"_token": $('#token').val(),
 				"id": $('#id').val(),
 				row    : parseInt( id / 3 ),
 				column : parseInt( id % 3 )
 			};
 			
-			// Apel catre server cu datele precum pozitia
-			// celulei pe care s-a dat click
 
 			$.post( 'addSign', data, function ( resp ) {
 				if ( resp ){
 					element.text( resp['sign'] );
 					
-					// Daca jocl s-a terminat si jucatorul curent este castigator
-					// sau s-a ajuns la o egalitate se va afisa
-					// blocul cu mesajul propriuzis
 					switch ( resp['winner'] ) {
 						case 1:
 							$( '.win' ).removeClass( 'hide' );
+							$( '.turn1' ).addClass( 'hide' );
+							$( '.turn2' ).addClass( 'hide' );
 							break;
 						case -1:
 							$( '.draw' ).removeClass( 'hide' );
+							$( '.turn1' ).addClass( 'hide' );
+							$( '.turn2' ).addClass( 'hide' );
 							break;
 					}
 					
-					// Opreste functia de actualizare
 					if( resp['winner']  == 1 || resp['winner']  == -1 ){
 						clearInterval( updater );
 					}
@@ -82,32 +81,32 @@ $( function () {
 		this.element = element;
 	}
 	
-	/**
-	 * Functia care se apeleaza la fiecare actualizare a jocului
-	 */
-
 	function update() {
 		var id=document.getElementById('id').value;
-		console.log(id);
+		// console.log(id);
 		$.get( '/update/'+id, function ( resp ) {
-			// Daca jocl s-a terminat si jucatorul curent este castigator
-			// sau s-a ajuns la o egalitate se va afisa
-			// blocul cu mesajul propriuzis
+
 			Game = resp;
 			if(gameStarted==true){
 				if ( resp['winner'] == 0){
 					$( '.lose' ).removeClass( 'hide' );
+					$( '.turn1' ).addClass( 'hide' );
+					$( '.turn2' ).addClass( 'hide' );
 					clearInterval( updater );
 				}
 				switch ( resp['winner'] ) {
 				case 1:
 					$( '.win' ).removeClass( 'hide' );
+					$( '.turn1' ).addClass( 'hide' );
+					$( '.turn2' ).addClass( 'hide' );
 					break;
 				case -1:
 					$( '.draw' ).removeClass( 'hide' );
+					$( '.turn1' ).addClass( 'hide' );
+					$( '.turn2' ).addClass( 'hide' );
 					break;
 			}
-			console.log(resp['turn']);
+			// console.log(resp['turn']);
 			switch ( resp['turn'] ) {
 				case 1:
 					$( '.turn1' ).removeClass( 'hide' );
@@ -133,71 +132,71 @@ $( function () {
 			}
 			else{
 			
-			// Atunci cand cel de-al doilea jucator intra in camera,
-			// initializeaza grila si porneste jocul.
 			if ( resp['accepted']=='1' && !gameStarted ) {
 				gameStarted = true;
 				$( '.loading' ).addClass( 'hide' );
 				$( '.grid' ).removeClass( 'hide' );
 				createGrid( Game.table_data );
 			}
+			if(resp==3){
+				alert('Invitiation Declined!');
+				window.location.replace("/home");
+			}
 			}
 		
-			
-			// In cazul in care se intra intr-un joc deja inceput
-			// se va popula grila cu valorile din baza de date
-
 			
 		} );
 	}
 
-	function noitfinvite(item, index){
-		$('#play'+item['user2_id']).html('Continue');
+	function notifoffline(item, index){
+		$('#offline'+item).removeClass('hide');
+		$('#online'+item).addClass('hide');
 	}
-	function noitfinvited(item, index){
-		$('.invite'+item['user1_id']).removeClass('hide');
-		$('#play'+item['user1_id']).addClass('hide');
+
+	function notifonline(item, index){
+		$('#offline'+item).addClass('hide');
+		$('#online'+item).removeClass('hide');
+	}
+
+	function notifinvite(item, index){
+		$('#offline'+item['user2_id']).addClass('hide');
+		$('#online'+item['user2_id']).removeClass('hide');
+		$('#play'+item['user2_id']).html('Continue').removeClass('btn-success').addClass('btn-warning');
+		}
+	
+	function notifinvited(item, index){
+		$('#offline'+item['user1_id']).addClass('hide');
+		$('#online'+item['user1_id']).removeClass('hide');
+		if(item['accepted']==1){
+			$('#play'+item['user1_id']).html('Continue').removeClass('btn-success').addClass('btn-warning');		
+			$('.invite'+item['user1_id']).addClass('hide');
+		}
+		else{
+			$('.invite'+item['user1_id']).removeClass('hide');
+			$('#play'+item['user1_id']).addClass('hide');
+		}
 	}
 	function notification(){
 		$.get( '/notif', function ( resp ) {
-			resp[0].forEach(noitfinvite);
-			resp[1].forEach(noitfinvited);
+			resp[2].forEach(notifoffline);
+			resp[3].forEach(notifonline);
+			resp[0].forEach(notifinvite);
+			resp[1].forEach(notifinvited);
 		});
 	}
-	
-	// Initializarea jocului:
-	// Daca utilizatorul este singur in camera virtuala atunci
-	// va astepta un alt jucator sa intre in camera, altfel
-	// se va initializa grila si se va incepe jocul
-	// var opponent=document.getElementById('opponent').value;
-	// $.get( '/play/'+opponent, function ( resp ) {
 
-	// 	data = resp;
-	// 	console.log('zzz');
-	// 	if ( data.constructor == Array ) {//daca primesc array
-	// 		// begin game
-	// 		// console.log("begin game ->",data);
-	// 		$( '.grid' ).toggleClass( 'hide' );
-	// 		createGrid( data );
-	// 		$( '.loading' ).addClass( 'hide' );
-	// 		gameStarted = true;
-	// 	} else {
-	// 		// wait for player
-	// 		console.log( "wait for player ->" );
-	// 	}
-		
-	// } );
 	
-	// Initializarea functiei de actualizare la fiecare 500 milisecunde
 	if (window.location.href.indexOf("game/") > -1) {
 		var updater = setInterval( function () {
 		update();
 	}, 500 );
 	}
 	else{
-		var updater = setInterval( function () {
-		notification();
-	}, 500 );
+		if(location.pathname=='/home'){
+					var updater = setInterval( function () {
+				notification();
+			}, 500 );
+		}
 	}
 } );
 

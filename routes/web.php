@@ -24,13 +24,11 @@ Auth::routes();
 Route::get('/home', [HomeController::class, 'index']);
 Route::get('/play/{id}', [HomeController::class, 'play']);
 Route::get('/notif', [HomeController::class, 'notif']);
+Route::get('/edit', [HomeController::class, 'edit']);
 Route::get('/leaderboard', [HomeController::class, 'leaderboard']);
 Route::get('/game/{id}', [HomeController::class, 'game']);
 Route::get('/update/{id}', [HomeController::class, 'update']);
 Route::post('/game/addSign', [HomeController::class, 'addSign']);
-// Route::get('/home', 'HomeController@index');
-
-// Route::get('/play', 'HomeController@play');
-// Route::get('/game', 'HomeController@game');
-// Route::get('/update', 'HomeController@update');
-// Route::post('/addSign', 'HomeController@addSign');
+Route::post('/updateProfile', [HomeController::class, 'updateProfile']);
+Route::get('/profile/{id}', [HomeController::class, 'profile'])->name('profile');
+Route::get('/decline/{id_santri}', [HomeController::class, 'decline']);

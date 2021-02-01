@@ -5,7 +5,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Laravel</title>
+        <title>TicTacToe</title>
 
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Raleway:100,600" rel="stylesheet" type="text/css">
@@ -78,8 +78,8 @@
             @endif
 
             <div class="content">
-                <div class="title m-b-md">
-                    TicTacToe
+                <div class="title m-b-md" style="color: #00a8ff">
+                 <span style="font-weight: 500">TicTacToe Multiplayer Game</span>
                 </div>
 
             </div>
